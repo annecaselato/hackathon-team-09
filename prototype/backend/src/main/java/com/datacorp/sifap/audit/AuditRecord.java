@@ -54,9 +54,11 @@ public class AuditRecord {
     @Column(name = "id_entidade", nullable = false, length = 15)
     private String idEntidade;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "campos_antes", columnDefinition = "jsonb")
     private String camposAntes;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "campos_depois", columnDefinition = "jsonb")
     private String camposDepois;
 

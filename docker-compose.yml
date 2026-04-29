@@ -47,6 +47,8 @@ services:
     build:
       context: ./prototype/frontend
       dockerfile: Dockerfile
+      args:
+        API_BASE_URL: http://backend:8080
     container_name: sifap-frontend
     environment:
       API_BASE_URL: http://backend:8080
