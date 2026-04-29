@@ -1,0 +1,114 @@
+name: Deploy Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy (dev, stage, prod)
+        required: true
+        default: dev
+      apply:
+        description: Apply terraform plan
+        required: true
+        default: "false"
+  push:
+    branches: [ main ]
+    paths:
+      - "prototype/**"
+      - "infra/**"
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository_owner }}/sifap-backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository_owner }}/sifap-frontend
+
+jobs:
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    outputs:
+      backend_image: ${{ steps.meta.outputs.backend_image }}
+      frontend_image: ${{ steps.meta.outputs.frontend_image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tags
+        id: meta
+        run: |
+          TAG=${GITHUB_SHA::7}
+          echo "backend_image=${REGISTRY}/${BACKEND_IMAGE_NAME}:${TAG}" >> $GITHUB_OUTPUT
+          echo "frontend_image=${REGISTRY}/${FRONTEND_IMAGE_NAME}:${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: prototype/backend
+          push: true
+          tags: ${{ steps.meta.outputs.backend_image }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: prototype/frontend
+          push: true
+          tags: ${{ steps.meta.outputs.frontend_image }}
+
+  terraform:
+    name: Terraform Plan or Apply
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: |
+          TARGET_ENV=${{ github.event.inputs.environment || 'dev' }}
+          terraform plan \
+            -var-file=environments/${TARGET_ENV}.tfvars \
+            -var backend_image=${{ needs.build-and-push.outputs.backend_image }} \
+            -var frontend_image=${{ needs.build-and-push.outputs.frontend_image }} \
+            -var db_admin_username=${{ secrets.DB_ADMIN_USERNAME }} \
+            -var db_admin_password=${{ secrets.DB_ADMIN_PASSWORD }} \
+            -var owner=${{ github.repository_owner }} \
+            -out=tfplan
+
+      - name: Terraform apply
+        if: ${{ github.event.inputs.apply == 'true' }}
+        run: terraform apply -auto-approve tfplan

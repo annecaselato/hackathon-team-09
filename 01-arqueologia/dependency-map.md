@@ -2,8 +2,8 @@
 title: "Program Dependency Map"
 description: "Call graph and data flow for SIFAP legacy Natural programs"
 author: "Paula Silva, AI-Native Software Engineer, Americas Global Black Belt at Microsoft"
-date: "2026-04-24"
-version: "1.1.0"
+date: "2026-04-29"
+version: "1.2.0"
 status: "approved"
 tags: ["stage-1", "dependencies", "call-graph", "data-flow"]
 ---
@@ -30,34 +30,58 @@ tags: ["stage-1", "dependencies", "call-graph", "data-flow"]
 
 ## 📊 Program Call Hierarchy
 
-### Entry Point Programs (User-Facing)
+### Entry Point Programs (User-Facing & Batch)
 
 ```
-┌─ REGISTBN (Register Beneficiary)
-│  ├─ VALIDATE-CPF (utility)
-│  ├─ CHECK-DUPLICATE (utility)
-│  └─ UPDATE-BENEFIC (Adabas persist)
+┌─ CADBENEF (Register Beneficiary)
+│  ├─ VALBENEF (validate: CPF, name, date, UF, status)
+│  └─ BENEFICIARIO (Adabas persist)
 │
-├─ CALCPAY (Calculate Payment)
-│  ├─ GET-BENEFIC (Adabas read)
-│  ├─ CALCULATE-DISCOUNT (utility)
-│  │  └─ GET-DISCOUNTS (Adabas read)
-│  ├─ VALIDATE-PAYMENT (utility)
-│  ├─ STORE-AUDIT (Adabas write)
-│  └─ PERSIST-PAYMENT (Adabas write)
+├─ BATCHPGT (Monthly Payment Generation) [Monthly, 1st business day]
+│  ├─ BENEFICIARIO (read by CPF)
+│  ├─ PROGRAMA-SOCIAL (lookup and parameters)
+│  ├─ CALCBENF (calculate base amount with factors)
+│  ├─ CALCDSCT (apply discounts, enforce 30% ceiling)
+│  ├─ PAGAMENTO (store payment record)
+│  └─ AUDITORIA (log batch event)
 │
-└─ GENRPT (Generate Reports)
-   ├─ READ-AUDIT (Adabas read)
-   ├─ READ-PAYMENTS (Adabas read)
-   ├─ FORMAT-REPORT (utility)
-   └─ EXPORT-PDF (utility)
+├─ BATCHCON (Bank Reconciliation) [Monthly, after payment dispatch]
+│  ├─ PAGAMENTO (read and update status)
+│  ├─ AUDITORIA (log reconciliation events)
+│  └─ Bank CNAB 240 file (input)
+│
+├─ BATCHREL (Payment Release to Bank)
+│  ├─ PAGAMENTO (read by status=G)
+│  └─ CNAB 240 output
+│
+├─ RELAUDIT (Audit Trail Report) [Manual demand]
+│  └─ AUDITORIA (read, filter action codes)
+│
+└─ RELPGT (Payment Report) [Manual demand]
+   └─ PAGAMENTO (read with date range filter)
 ```
 
-### Batch Job Entry Points
+### Supporting Programs (Internal Logic)
 
 ```
-┌─ NIGHTLY-BATCH (Scheduled)
-│  ├─ PROCESS-CYCLE (utility)
+┌─ CALCBENF (Benefit Calculation)
+│  └─ Applies factors: regional, family, income, age + reajuste
+│
+├─ CALCDSCT (Discount Calculation)
+│  └─ Enforces ceiling (30% non-judicial, unlimited judicial)
+│
+├─ CALCCORR (Correction/Adjustment)
+│  └─ Updates existing PAGAMENTO + AUDITORIA
+│
+├─ VALBENEF (Beneficiary Validation)
+│  └─ CPF modulo-11, name, date, UF, status domain
+│
+├─ CONSBENF (Beneficiary Consultation) [Terminal UI]
+│  └─ BENEFICIARIO (read by CPF filter)
+│
+└─ VALDOCS (Legal Document Validation)
+   └─ External validation service call
+```
 │  │  └─ CALCPAY (calls main calculation)
 │  └─ SEND-NOTIFICATIONS (utility)
 │
@@ -72,108 +96,143 @@ tags: ["stage-1", "dependencies", "call-graph", "data-flow"]
 ### Beneficiary Registration Flow
 
 ```
-USER INPUT
+USER INPUT (CADBENEF)
    |
    v
-REGISTBN
+VALBENEF
    |
-   +---> VALIDATE-CPF -----> [CPF valid?] --NO--> REJECT
-   |                              |
-   |                            YES
-   +---> CHECK-DUPLICATE -----> [CPF exists?] --YES--> REJECT
-   |                              |
-   |                             NO
-   +---> UPDATE-BENEFIC
-         |
-         v
-      Adabas DDM: BENEFIC
-         |
-         v
-      [Status = ACTIVE]
-         |
-         v
-      ACCEPT
-         |
-         v
-      USER OUTPUT
+   +---> [CPF valid (modulo-11)?] --NO--> REJECT
+   |     [Name has space?] --NO--> REJECT
+   |     [Birth date valid?] --NO--> REJECT
+   |     [UF in 27-state table?] --NO--> REJECT
+   |     [Status in A/S/C/I/D?] --NO--> REJECT
+   |
+   v (all validations pass)
+BENEFICIARIO
+   |
+   v
+[Create record with Status = A]
+   |
+   v
+AUDITORIA
+   |
+   v
+[Log: COD-ACAO=IN, timestamp UTC]
+   |
+   v
+ACCEPT
+   |
+   v
+USER OUTPUT
 ```
 
-### Payment Calculation Flow
+### Monthly Payment Generation Flow (BATCHPGT)
 
 ```
-ENTRY: CALCPAY (Beneficiary ID, Cycle)
+SCHEDULED: 1st business day of month, 22:00h
    |
    v
-GET-BENEFIC from Adabas BENEFIC.DDM
+BATCHPGT
+   |
+   +---> For each BENEFICIARIO where STATUS=A
+   |
+   +---> [Payment exists for ANO-MES-REF?] --YES--> SKIP
+   |
+   v (Duplicate check passed)
+PROGRAMA-SOCIAL
+   |
+   +---> Retrieve base amount and parameters
+   |
+   +---> CALCBENF
+         |
+         +---> base * fator-regional * fator-familia
+         +---> * fator-renda * fator-idade * (1 + reajuste)
+         |
+         +---> [IF MONTH=12: add 13º bonus]
+         +---> [IF PROGRAM=A & MONTH=12: add 15% abono]
+         |
+         v
+      Return VLR-BRUTO
+         |
+         v
+   +---> CALCDSCT
+         |
+         +---> For each TIPO-DESCONTO
+         +---> IF TIPO-DESCONTO != 'J' AND total > 30% THEN
+         |     TRUNCATE to 30%
+         |
+         v
+      Return VLR-DESCONTO
+         |
+         v
+   +---> Calculate VLR-LIQUIDO = VLR-BRUTO - VLR-DESCONTO
+   |
+   +---> PAGAMENTO (STORE)
+   |     [Status = G (gerado)]
+   |
+   +---> AUDITORIA (STORE)
+   |     [COD-ACAO=IN, TIPO-ENTIDADE=PGTO]
    |
    v
-   +---> [Status = ACTIVE?] --NO--> REJECT
-   |           |
-   |         YES
-   +---> CALCULATE-DISCOUNT
-         |
-         +---> GET-DISCOUNTS from Adabas DISCOUNT.DDM
-         |
-         v
-         [Apply 30% ceiling for non-judicial]
-         [Judicial discounts bypass ceiling]
-         |
-         v
-      RETURN total_discount
-         |
-         v
-   +---> VALIDATE-PAYMENT
+Summary: logged to batch report
+   |
+   v
+COMPLETE
+```
+
+### Bank Reconciliation Flow (BATCHCON)
+
+```
+INPUT: Bank return file (CNAB 240)
+   |
+   v
+BATCHCON
+   |
+   +---> For each return record
+   |
+   +---> Read PAGAMENTO by NUM-PAGTO
+   |
+   +---> [Payment found?] --NO--> Log divergence
    |     |
-   |     v
-   |     [Net amount > 0?] --NO--> REJECT
-   |     [Payment date in cycle?] --NO--> REJECT
-   |     [All business rules pass?] --NO--> REJECT
-   |
-   +---> PERSIST-PAYMENT to Adabas PAYMENT.DDM
+   |     YES
+   +---> [Amount matches?] --NO--> Log divergence
    |     |
-   |     v
-   |     [Create record with Status = APPROVED]
+   |     YES
+   v
+UPDATE PAGAMENTO
    |
-   +---> STORE-AUDIT to Adabas AUDIT.DDM
-         |
-         v
-         [Record: operation=CREATE, entity=PAYMENT, timestamp=UTC]
-         |
-         v
-      ACCEPT
-         |
-         v
-      RETURN payment_id
-```
-
-### Report Generation Flow
-
-```
-ENTRY: GENRPT (Report Type, Date Range)
+   +---> Status from G → P (pagamento)
    |
    v
-   +---> READ-AUDIT from Adabas AUDIT.DDM
-   |     [Filter by date range]
+AUDITORIA (STORE)
    |
-   +---> READ-PAYMENTS from Adabas PAYMENT.DDM
-   |     [Join with BENEFIC]
+   +---> [Log: COD-ACAO=CO (confirmed)]
+   |
+   v
+COMPLETE
+```
+
+### Audit Report Flow (RELAUDIT)
+
+```
+ENTRY: RELAUDIT (date range)
+   |
+   v
+AUDITORIA (read with filters)
+   |
+   +---> Filter: date range (DT-EVENTO)
+   +---> Exclude: COD-ACAO='EX' (deletions not shown)
+   |
+   v
+GROUP BY COD-ACAO
+COUNT by operation type
    |
    v
 FORMAT-REPORT
    |
    v
-   +---> Aggregate and calculate totals
-   |
-   +---> Sort by date, beneficiary
-   |
-   v
-EXPORT-PDF
-   |
-   v
-[PDF file]
-   |
-   v
-USER DOWNLOAD
+OUTPUT: 66-line mainframe report
+```
 ```
 
 ---

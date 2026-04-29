@@ -2,11 +2,11 @@ name: Lint Markdown and Spec Quality
 
 on:
   push:
-    branches: [ main, develop, "spec/**" ]
+    branches: [ main, develop ]
   pull_request:
     paths:
-      - "**.md"
-      - ".specs/**"
+      - "**/*.md"
+      - "02-spec-moderna/**"
       - "docs/**"
 
 permissions:
@@ -24,28 +24,28 @@ jobs:
           globs: |
             **/*.md
             !node_modules
-            !backend/target
-            !frontend/.next
+            !prototype/backend/target
+            !prototype/frontend/.next
 
   spec-traceability:
     name: REQ-ID traceability check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Find REQ-IDs without tests
+      - name: Validate REQ traceability against implementation
         run: |
           set -e
-          if [ -d ".specs" ]; then
-            echo "Checking REQ-ID traceability across .specs/ and source/test files..."
-            grep -rE "REQ-[A-Z]+-[0-9]+" .specs/ -h | grep -oE "REQ-[A-Z]+-[0-9]+" | sort -u > /tmp/reqs-spec.txt || true
-            grep -rE "@implements REQ-[A-Z]+-[0-9]+|REQ-[A-Z]+-[0-9]+" backend/src frontend 2>/dev/null | grep -oE "REQ-[A-Z]+-[0-9]+" | sort -u > /tmp/reqs-code.txt || true
+          if [ -d "02-spec-moderna" ]; then
+            echo "Checking REQ-ID traceability across 02-spec-moderna and prototype code..."
+            grep -rE "REQ-[A-Z]+-[0-9]+" 02-spec-moderna -h | grep -oE "REQ-[A-Z]+-[0-9]+" | sort -u > /tmp/reqs-spec.txt || true
+            grep -rE "REQ-[A-Z]+-[0-9]+" prototype/backend prototype/frontend 2>/dev/null | grep -oE "REQ-[A-Z]+-[0-9]+" | sort -u > /tmp/reqs-code.txt || true
             comm -23 /tmp/reqs-spec.txt /tmp/reqs-code.txt > /tmp/missing.txt || true
             if [ -s /tmp/missing.txt ]; then
-              echo "::warning::REQ-IDs declared in .specs/ but not referenced in code:"
+              echo "::warning::REQ-IDs declarados na especificação sem referência em código:"
               cat /tmp/missing.txt
             else
               echo "All REQ-IDs are traced."
             fi
           else
-            echo "No .specs/ directory yet. Skipping traceability check."
+            echo "No 02-spec-moderna directory found. Skipping traceability check."
           fi

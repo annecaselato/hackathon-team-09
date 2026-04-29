@@ -1,0 +1,7 @@
+environment       = "dev"
+location          = "brazilsouth"
+owner             = "team-09"
+backend_image     = "ghcr.io/your-org/sifap-backend:dev"
+frontend_image    = "ghcr.io/your-org/sifap-frontend:dev"
+db_admin_username = "sifapadmin"
+db_admin_password = "change-me-dev"

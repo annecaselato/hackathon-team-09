@@ -2,8 +2,8 @@
 title: "SIFAP Domain Glossary"
 description: "Portuguese-to-English domain terms and entity mappings for SIFAP legacy system"
 author: "Paula Silva, AI-Native Software Engineer, Americas Global Black Belt at Microsoft"
-date: "2026-04-24"
-version: "1.1.0"
+date: "2026-04-29"
+version: "1.2.0"
 status: "approved"
 tags: ["stage-1", "glossary", "domain", "legacy", "terminology"]
 ---
@@ -36,14 +36,14 @@ tags: ["stage-1", "glossary", "domain", "legacy", "terminology"]
 
 **Definition**: A person eligible to receive government benefit payments under SIFAP.
 
-**Legacy DDM**: BENEFIC.DDM
+**Legacy DDM**: [legacy/adabas-ddms/BENEFICIARIO.ddm](legacy/adabas-ddms/BENEFICIARIO.ddm)
 
 **Key fields**:
-- ID (PIC 9(8)): Unique identifier
-- CPF (PIC X(11)): Tax registration number (Cadastro de Pessoa Física)
-- Name (PIC X(100)): Full legal name
-- Status (PIC X(20)): ACTIVE | SUSPENDED | CANCELLED
-- BenefitType (PIC X(3)): R | E | S (Regular, Extended, Special)
+- CPF (A11): Tax registration number (Cadastro de Pessoa Física)
+- NOME (A100): Full legal name
+- NASCIMENTO (N8): Birth date (YYYYMMDD)
+- UF (A2): State (27-value domain)
+- STATUS (A1): A/S/C/I/D
 
 **Modern equivalent**: `Beneficiary` (JPA entity)
 
@@ -55,20 +55,20 @@ tags: ["stage-1", "glossary", "domain", "legacy", "terminology"]
 
 **Definition**: Individual payment transaction issued to a beneficiary in a given cycle.
 
-**Legacy DDM**: PAYMENT.DDM
+**Legacy DDM**: [legacy/adabas-ddms/PAGAMENTO.ddm](legacy/adabas-ddms/PAGAMENTO.ddm)
 
 **Key fields**:
-- ID (PIC 9(10)): Unique payment ID
-- BeneficiaryID (PIC 9(8)): Foreign key to BENEFIC
-- CycleDate (PIC X(7)): Payment cycle (YYYY-MM format)
-- BaseAmount (DEC(13,2)): Gross benefit amount before discounts
-- DiscountTotal (DEC(13,2)): Sum of all discounts applied
-- NetAmount (DEC(13,2)): Final amount = BaseAmount - DiscountTotal
-- Status (PIC X(20)): APPROVED | PAID | REJECTED | CANCELLED
+- NUM-PAGAMENTO (N15): Unique payment ID (descriptor)
+- CPF-BENEF (A11): Foreign key to BENEFICIARIO (descriptor)
+- ANO-MES-REF (N6): Payment cycle AAAAMM (descriptor)
+- VLR-BRUTO (N9.2): Gross benefit amount before discounts
+- VLR-DESCONTO (N7.2): Sum of all discounts applied
+- VLR-LIQUIDO (N9.2): Final amount = VLR-BRUTO - VLR-DESCONTO
+- SIT-PAGAMENTO (A1): P/G/E/C/D/X/R status
 
 **Modern equivalent**: `Payment` (JPA entity)
 
-**Usage**: Created monthly for each ACTIVE beneficiary during payment cycle.
+**Usage**: Created monthly for each ACTIVE beneficiary during payment cycle. Historical retention: no purge since 1998.
 
 ---
 
@@ -76,15 +76,13 @@ tags: ["stage-1", "glossary", "domain", "legacy", "terminology"]
 
 **Definition**: Deduction applied to a beneficiary's payment (tax, social contributions, court order, etc.)
 
-**Legacy DDM**: DISCOUNT.DDM
+**Legacy Structure**: Embedded in PAGAMENTO.ddm as periodic group GRP-DESCONTO (max 8 occurrences)
 
 **Key fields**:
-- ID (PIC 9(10)): Unique discount ID
-- BeneficiaryID (PIC 9(8)): Foreign key to BENEFIC
-- Type (PIC X(3)): J | C | I | [others] (see discount types below)
-- Amount (DEC(13,2)): Discount value
-- EffectiveFrom (PIC X(10)): Start date (YYYY-MM-DD)
-- EffectiveTo (PIC X(10)): End date (YYYY-MM-DD)
+- TIPO-DESCONTO (A3): J | C | I | [others] (see discount types below)
+- VLR-DESCONTO (N7.2): Discount value
+- DT-INICIO (N8): Start date (YYYYMMDD)
+- DT-FIM (N8): End date (YYYYMMDD)
 
 **Modern equivalent**: `Deduction` (JPA entity)
 
@@ -96,7 +94,7 @@ tags: ["stage-1", "glossary", "domain", "legacy", "terminology"]
 
 **Definition**: Immutable record of every change to SIFAP data (create, update, delete attempts).
 
-**Legacy DDM**: AUDIT.DDM
+**Legacy DDM**: [legacy/adabas-ddms/AUDITORIA.ddm](legacy/adabas-ddms/AUDITORIA.ddm)
 
 **Key fields**:
 - ID (PIC 9(12)): Auto-incrementing audit ID

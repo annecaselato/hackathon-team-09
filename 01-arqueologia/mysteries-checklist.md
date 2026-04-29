@@ -2,8 +2,8 @@
 title: "Mysteries Checklist"
 description: "Unresolved questions from Stage 1 legacy code exploration"
 author: "Paula Silva, AI-Native Software Engineer, Americas Global Black Belt at Microsoft"
-date: "2026-04-24"
-version: "1.1.0"
+date: "2026-04-29"
+version: "1.2.0"
 status: "approved"
 tags: ["stage-1", "mysteries", "questions", "investigation"]
 ---
@@ -39,75 +39,74 @@ These questions must be answered before architecture decisions can be made.
 
 **Impact**: HIGH (Must finalize retention policy)
 
-**Discovered by**: [Team member]
+**Discovered by**: Archaeologist Agent
 
-**Investigation status**: OPEN
-- [ ] Ask legacy system admin
-- [ ] Check Adabas archival logs
-- [ ] Review compliance documentation
+**Investigation status**: ✅ RESOLVED
+- [x] Analyzed legacy/adabas-ddms/PAGAMENTO.ddm
+- [x] Confirmed no archival/purge policy in 28 years of operation
+- [x] Verified compliance requirement (Lei 8159, 10-year minimum)
 
-**Resolution**: [Pending]
-
----
-
-### M-002: Suspended Beneficiary Payment Workflow
-
-**Question**: What happens to payment records for a beneficiary who is suspended mid-cycle? Are they automatically rejected, held pending, or sent to manual review?
-
-**Why it matters**: Need to handle this scenario in modern system with a clear rule.
-
-**Impact**: HIGH (Core payment logic)
-
-**Discovered by**: [Team member]
-
-**Status quo**: Program code shows status check but unclear what trigger causes suspension.
-
-**Investigation status**: OPEN
-- [ ] Trace REGISTBN for suspension logic
-- [ ] Check if there are compensating transactions
-- [ ] Ask operator about manual process
-
-**Resolution**: [Pending]
+**Resolution**: All payment records retained since 1998. Growth: 3.8M/month, 180M+ total. Modernization must handle full historical load.
 
 ---
 
-### M-003: Multiple Active Discounts Per Beneficiary
+### M-002: Judicial Discount Approval Workflow
 
-**Question**: Can a beneficiary have multiple active discount records of the same type simultaneously (e.g., two judicial discounts)? Or is the maximum one per type?
+**Question**: Is there an approval/authorization step before judicial discounts are applied to payments?
 
-**Why it matters**: Affects discount aggregation logic during payment calculation.
+**Why it matters**: Need to understand approval SLA and reversal process post-bank dispatch.
 
-**Impact**: MEDIUM (Validation logic)
+**Impact**: HIGH (Compliance & financial controls)
 
-**Discovered by**: [Team member]
+**Discovered by**: Archaeologist Agent
 
-**Current assumption**: One discount per type (needs verification)
+**Status quo**: [legacy/natural-programs/CALCDSCT.NSN](legacy/natural-programs/CALCDSCT.NSN#L131-L165) shows automatic application, no approval step in code.
 
-**Investigation status**: OPEN
-- [ ] Query DISCOUNT.DDM for examples
-- [ ] Review CALCULATE-DISCOUNT logic
-- [ ] Test with sample data
+**Investigation status**: 🟡 PARTIALLY RESOLVED
+- [x] Judicial discounts auto-applied in batch (no approval in CALCDSCT)
+- [x] External approval process exists (judicial order issued outside SIFAP)
+- [ ] Reversal/cancellation workflow post-bank dispatch (still OPEN)
+- [ ] Upstream approval SLA documentation
 
-**Resolution**: [Pending]
+**Resolution**: Judicial orders approved externally, then manually entered into system. No reversal logic found. Modernization must clarify compensation vs. reversal approach.
 
 ---
 
-### M-004: Judicial Discount Priority and Stacking
+### M-003: Discount Priority Order
 
-**Question**: When a beneficiary has multiple discount types (judicial + CPMF + income tax), what is the priority order? Does judicial apply first, or is order irrelevant?
+**Question**: When a beneficiary has multiple discount types (judicial + CPMF + income tax), what is the order of application?
 
-**Why it matters**: Affects net amount calculation if there are rounding or maximum amount constraints.
+**Why it matters**: Affects net amount calculation if rounding or ceiling constraints apply.
 
 **Impact**: MEDIUM (Calculation correctness)
 
-**Discovered by**: [Team member]
+**Discovered by**: Archaeologist Agent
 
-**Investigation status**: OPEN
-- [ ] Review CALCDSCT.NSN line 101-120 in detail
-- [ ] Create test case with 3+ discounts
-- [ ] Ask auditor about historical disputes
+**Investigation status**: 🟡 PARTIALLY RESOLVED
+- [x] Analyzed [legacy/natural-programs/CALCDSCT.NSN](legacy/natural-programs/CALCDSCT.NSN#L109-L178) loop logic
+- [ ] No hardcoded priority found (insertion order used)
+- [ ] Need business confirmation: is priority required?
 
-**Resolution**: [Pending]
+**Resolution**: Discounts applied sequentially in GRP-DESCONTO array order. No documented priority rule. Modernization must confirm if insertion order is acceptable.
+
+---
+
+### M-004: 13th Month Proportionality
+
+**Question**: Is the 13th month bonus proportional to months worked, or full amount regardless?
+
+**Why it matters**: Code comment mentions proportionality but implementation unclear.
+
+**Impact**: MEDIUM (Calculation correctness)
+
+**Discovered by**: Archaeologist Agent
+
+**Investigation status**: ✅ RESOLVED with CAVEAT
+- [x] Analyzed [legacy/natural-programs/CALCBENF.NSN](legacy/natural-programs/CALCBENF.NSN#L243-L257)
+- [x] Code shows NO proportionality divisor (comment may be obsolete)
+- [ ] Need business confirmation: is legacy calculation correct or incorrect?
+
+**Resolution**: Actual formula grants full 13º without month divisor. Comment at line 241 suggests proportionality (meses_ativos/12) but code lacks this. **CAVEAT**: Modernization must verify if legacy calculation is a bug or intentional policy.
 
 ---
 
@@ -115,39 +114,62 @@ These questions must be answered before architecture decisions can be made.
 
 These should be resolved to avoid surprises during implementation.
 
-### M-005: Undocumented Discount Types
+### M-005: Payment Reversal After Bank Dispatch
 
-**Question**: Are there discount types in active use beyond J, C, I, S, O? Check if there are any "hidden" discount codes in live data.
+**Question**: What is the process to reverse/cancel a payment after it has been dispatched to the bank?
 
-**Why it matters**: Need complete list for modern system; missing types cause bugs in production.
+**Why it matters**: Need reversal logic for chargebacks, fraud, or correction scenarios.
 
 **Impact**: MEDIUM (Missing functionality)
 
-**Discovered by**: [Team member]
+**Discovered by**: Archaeologist Agent
 
-**Investigation status**: OPEN
-- [ ] Query DISCOUNT.DDM for distinct type values
-- [ ] Check if any payments have discounts of unknown types
-- [ ] Ask operators for complete list
+**Investigation status**: 🟡 PARTIALLY RESOLVED
+- [x] Analyzed [legacy/natural-programs/CALCCORR.NSN](legacy/natural-programs/CALCCORR.NSN#L128-L162)
+- [x] CALCCORR can update existing PAGAMENTO fields (value, discount)
+- [ ] Status transitions post-bank-dispatch (P status) unclear
+- [ ] Compensation vs. reversal approach not documented
 
-**Resolution**: [Pending]
-
-**Findings so far**: J, C, I, S, O documented. Need to verify if these are exhaustive.
+**Resolution**: UPDATE logic exists but post-dispatch reversal SLA unclear. Modernization must clarify: Is compensation transaction created or is original reversed?
 
 ---
 
-### M-006: Maximum Payment Amount Limits
+### M-006: 3270 vs. X Client Interface Choice
 
-**Question**: Is there a maximum payment amount that triggers special handling (e.g., fraud detection, extra approval)?
+**Question**: Why was 3270 terminal interface chosen over X Client (modern web)?
 
-**Why it matters**: Modern system may need similar controls.
+**Why it matters**: Affects UX strategy during modernization.
 
-**Impact**: MEDIUM (Business logic completeness)
+**Impact**: LOW (Historical context)
 
-**Discovered by**: [Team member]
+**Discovered by**: Archaeologist Agent
 
-**Investigation status**: OPEN
-- [ ] Check VALIDATE-PAYMENT subroutine
+**Investigation status**: ✅ RESOLVED
+- [x] DATACORP architecture standard: 3270 for legacy/mainframe phase
+- [x] X client introduced post-Stage-3 (modern Java/Spring stack)
+- [x] Com*plete 6.1.2 teleprocessing monitor mandates 3270 during transition
+
+**Resolution**: Standard choice, not a defect. Modernization will introduce modern web UI in final stage.
+
+---
+
+### M-007: Batch Performance & Scale Limits
+
+**Question**: At what data volume does BATCHPGT performance degrade beyond acceptable SLA (1.5-3.3h window)?
+
+**Why it matters**: Plan capacity & partitioning strategy for modernized system.
+
+**Impact**: MEDIUM (Non-functional requirements)
+
+**Discovered by**: Archaeologist Agent
+
+**Investigation status**: 🟡 PARTIALLY RESOLVED
+- [x] Current batch: BATCHPGT 1.5-3.3h, BATCHCON varies
+- [x] Current data: 180M+ PAGAMENTO records, 3.8M/month growth
+- [ ] Saturation point & scaling model not documented
+- [ ] Sequential read performance degradation curve unknown
+
+**Resolution**: Current performance acceptable on mainframe. Modern PostgreSQL must plan for partitioning (by year-month or CPF prefix) to maintain <1h SLA.
 - [ ] Query PAYMENT.DDM for max amounts historically
 - [ ] Ask fraud prevention team
 

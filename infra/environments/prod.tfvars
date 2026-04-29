@@ -1,0 +1,7 @@
+environment       = "prod"
+location          = "brazilsouth"
+owner             = "team-09"
+backend_image     = "ghcr.io/your-org/sifap-backend:prod"
+frontend_image    = "ghcr.io/your-org/sifap-frontend:prod"
+db_admin_username = "sifapadmin"
+db_admin_password = "change-me-prod"

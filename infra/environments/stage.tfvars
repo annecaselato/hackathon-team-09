@@ -1,0 +1,7 @@
+environment       = "stage"
+location          = "brazilsouth"
+owner             = "team-09"
+backend_image     = "ghcr.io/your-org/sifap-backend:stage"
+frontend_image    = "ghcr.io/your-org/sifap-frontend:stage"
+db_admin_username = "sifapadmin"
+db_admin_password = "change-me-stage"

@@ -2,12 +2,7 @@
 name: archaeologist
 description: "Stage 1 agent — reads legacy Natural/Adabas code, extracts business rules, maps dependencies, catalogs mysteries"
 model: claude-opus-4-7
-tools:
-  - codebase
-  - search
-  - usages
-  - findFiles
-  - fetch
+tools: [read/readFile, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/textSearch, search/usages, web/fetch]
 ---
 
 # @archaeologist-agent
