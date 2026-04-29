@@ -23,17 +23,12 @@ You are modernizing the **SIFAP** system (Social Benefits Payment System) from N
 
 ## Active Personas on This Team
 
-<!-- TODO: Each team fills in the 10 active personas here -->
-- [ ] Product Owner
-- [ ] Requirements Engineer
-- [ ] Enterprise Architect
-- [ ] Software Architect
-- [ ] Technical Lead
-- [ ] Developer
-- [ ] DBA
-- [ ] QA Engineer
-- [ ] DevOps Engineer
-- [ ] Tech Writer
+- [x] 01 - Technical Lead - Vitor Filincowsky
+- [x] 02 - Backend Developer - Danilo Lisboa
+- [x] 03 - Frontend Developer - Rodrigo Armenio
+- [x] 03 - Frontend Developer - Erique Costa
+- [x] 04 - DevOps Engineer - Anne Caselato
+- [x] 05 - QA Engineer - Reges Alves
 
 ## How to Use Copilot
 
