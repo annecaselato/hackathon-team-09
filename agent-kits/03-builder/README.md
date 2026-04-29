@@ -40,7 +40,7 @@ tags: ["agent", "builder", "implementation", "java", "nextjs", "stage-3"]
 ## How to Activate
 
 1. Open the VS Code Chat panel
-2. Select the **builder** chatmode
+2. Select the **builder** agent
 3. Paste your opening prompt:
    ```
    I'm starting Stage 3 — Implementation. Our SPECIFICATION.md has [N] EARS
@@ -74,9 +74,9 @@ Your team exits Stage 3 when you have:
 | Microservices creep | All code stays in the Modular Monolith; new deployables are refused |
 | Skipping validation | Controllers always use `@Valid`; services validate preconditions |
 
-## Chatmode File
+## Agent File
 
-[`.github/chatmodes/builder.chatmode.md`](../../.github/chatmodes/builder.chatmode.md)
+[`.github/agents/builder.agent.md`](../../.github/agents/builder.agent.md)
 
 ---
 

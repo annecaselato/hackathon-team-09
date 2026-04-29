@@ -40,7 +40,7 @@ tags: ["agent", "archaeology", "legacy", "natural", "adabas", "stage-1"]
 ## How to Activate
 
 1. Open the VS Code Chat panel (`Ctrl+Shift+I` or `Cmd+Shift+I`)
-2. Click the agent selector at the top of the chat panel
+2. Click the chatmode selector at the top of the chat panel
 3. Select **archaeologist**
 4. Paste your opening prompt:
    ```
@@ -71,9 +71,9 @@ Your team exits Stage 1 when you have:
 | Modifying legacy files | The agent has no edit tools — `legacy/` is a museum |
 | Jumping to architecture design | The agent redirects to Stage 2 and `@architect-agent` |
 
-## Agent File
+## Chatmode File
 
-[`.github/agents/archaeologist.agent.md`](../../.github/agents/archaeologist.agent.md)
+[`.github/chatmodes/archaeologist.chatmode.md`](../../.github/chatmodes/archaeologist.chatmode.md)
 
 ---
 

@@ -40,7 +40,7 @@ tags: ["agent", "evolution", "devops", "terraform", "cicd", "stage-4"]
 ## How to Activate
 
 1. Open the VS Code Chat panel
-2. Select the **evolution** chatmode
+2. Select the **evolution** agent
 3. Paste your opening prompt:
    ```
    I'm starting Stage 4 — Evolution. We have a working prototype with [N]
@@ -70,9 +70,9 @@ Your team exits Stage 4 when you have:
 | Secrets in source or logs | Hardcoded credentials are flagged immediately |
 | Scope creep (new features) | New ideas go to a backlog issue; Stage 4 operationalizes what exists |
 
-## Chatmode File
+## Agent File
 
-[`.github/chatmodes/evolution.chatmode.md`](../../.github/chatmodes/evolution.chatmode.md)
+[`.github/agents/evolution.agent.md`](../../.github/agents/evolution.agent.md)
 
 ---
 

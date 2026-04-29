@@ -5,7 +5,7 @@ author: "Paula Silva, AI-Native Software Engineer, Americas Global Black Belt at
 date: "2026-04-29"
 version: "1.0.0"
 status: "approved"
-tags: ["agents", "sdlc", "chatmodes", "copilot", "hackathon"]
+tags: ["agents", "sdlc", "agents", "copilot", "hackathon"]
 ---
 
 # Agent Kits — 4 SDLC Stage Agents
@@ -16,12 +16,12 @@ The 25 persona-kits tell each person *what they own*. The 4 agent kits tell the 
 
 ## The 4 Agents
 
-| Agent | Stage | Mission | Chatmode | Model |
+| Agent | Stage | Mission | Agent | Model |
 |-------|-------|---------|----------|-------|
-| [`@archaeologist-agent`](01-archaeologist/README.md) | 1 — Archaeology | Read legacy code, extract rules, map dependencies, catalog mysteries | [`archaeologist`](../.github/chatmodes/archaeologist.chatmode.md) | Claude Opus 4.7 |
-| [`@architect-agent`](02-architect/README.md) | 2 — Modern Spec | Carve bounded contexts, write EARS, generate ADRs, design Modular Monolith | [`architect`](../.github/chatmodes/architect.chatmode.md) | Claude Opus 4.7 |
-| [`@builder-agent`](03-builder/README.md) | 3 — Implementation | Translate legacy patterns to Java 21, generate JPA from FDT, write tests, build REST + Next.js | [`builder`](../.github/chatmodes/builder.chatmode.md) | Claude Sonnet 4.6 |
-| [`@evolution-agent`](04-evolution/README.md) | 4 — Evolution | Write GitHub Issues for Copilot Agent, review AI-generated PRs, set up CI/CD and IaC | [`evolution`](../.github/chatmodes/evolution.chatmode.md) | Claude Sonnet 4.6 |
+| [`@archaeologist-agent`](01-archaeologist/README.md) | 1 — Archaeology | Read legacy code, extract rules, map dependencies, catalog mysteries | [`archaeologist`](../.github/agents/archaeologist.agent.md) | Claude Opus 4.7 |
+| [`@architect-agent`](02-architect/README.md) | 2 — Modern Spec | Carve bounded contexts, write EARS, generate ADRs, design Modular Monolith | [`architect`](../.github/agents/architect.agent.md) | Claude Opus 4.7 |
+| [`@builder-agent`](03-builder/README.md) | 3 — Implementation | Translate legacy patterns to Java 21, generate JPA from FDT, write tests, build REST + Next.js | [`builder`](../.github/agents/builder.agent.md) | Claude Sonnet 4.6 |
+| [`@evolution-agent`](04-evolution/README.md) | 4 — Evolution | Write GitHub Issues for Copilot Agent, review AI-generated PRs, set up CI/CD and IaC | [`evolution`](../.github/agents/evolution.agent.md) | Claude Sonnet 4.6 |
 
 ## Persona × Agent Matrix
 
@@ -42,11 +42,13 @@ Every persona uses every agent, with varying intensity. **PROTAGONIST** drives t
 
 For detailed per-cell guidance, see [`../docs/persona-agent-matrix.md`](../docs/persona-agent-matrix.md).
 
+For the **full SDLC integration map** — timeline, handoffs, prompts per persona, and deliverables per stage — see [`../docs/sdlc-flow-guide.md`](../docs/sdlc-flow-guide.md). Print that page.
+
 ## How to Activate an Agent
 
 ```mermaid
 flowchart TD
-    A["1. Open VS Code Chat Panel"] --> B["2. Click the chatmode selector\n(top of chat panel)"]
+    A["1. Open VS Code Chat Panel"] --> B["2. Click the agent selector\n(top of chat panel)"]
     B --> C["3. Select the agent\nfor your current stage"]
     C --> D{"Which stage?"}
     D -->|"Stage 1"| E["Select: archaeologist"]

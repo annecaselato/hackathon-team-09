@@ -40,7 +40,7 @@ tags: ["agent", "architect", "specification", "ears", "adr", "stage-2"]
 ## How to Activate
 
 1. Open the VS Code Chat panel
-2. Select the **architect** chatmode
+2. Select the **architect** agent
 3. Paste your opening prompt:
    ```
    I'm starting Stage 2 — Modern Spec. Here are our Stage 1 deliverables:
@@ -70,9 +70,9 @@ Your team exits Stage 2 when you have:
 | Skipping EARS validation | Every requirement is checked against the 6 EARS patterns |
 | Fabricating metrics or benchmarks | The agent states assumptions explicitly or marks `<!-- TODO: confirm -->` |
 
-## Chatmode File
+## Agent File
 
-[`.github/chatmodes/architect.chatmode.md`](../../.github/chatmodes/architect.chatmode.md)
+[`.github/agents/architect.agent.md`](../../.github/agents/architect.agent.md)
 
 ---
 
